@@ -38,6 +38,19 @@ Each image is two stages: a builder with compilers and git, and a CUDA runtime t
 
 Mount `-v brain-cache:/cache` so a restarted brain does not recompile. Without the mount the JIT caches are lost on exit.
 
+## Publish
+
+All families live in one public GHCR package, `ghcr.io/unidroid-ai/brain`, with one tag per folder (`brain:gr00t-n17-v0`). Tags are labels; the platform and validators use the digest, `ghcr.io/unidroid-ai/brain@sha256:...`.
+
+Either run the **publish** workflow (Actions → publish → pick the folder; the digest is in the job summary), or push by hand:
+
+```bash
+echo "$GHCR_TOKEN" | docker login ghcr.io -u <user> --password-stdin   # token with write:packages
+bash gr00t-n17-v0/build_and_push.sh
+```
+
+After the first push, set the package to **public** (GitHub → Packages → brain → Package settings). Validators pull without credentials, and a private package answers them with 401. Then paste the digest into Admin → Brains.
+
 ## Adding a family
 
 A new model family, or an incompatible runtime for an existing one, is ready for a challenge when all of these hold:

@@ -13,7 +13,7 @@ python -c "from gr00t_n17_check import seal_from_directory; from pathlib import 
 `sealed` must be true. An unsealed reference rejects every submission.
 
 ```
-bash gr00t-n17-v0/build_and_push.sh registry.example/brain-gr00t-n17-v0:phase
+bash gr00t-n17-v0/build_and_push.sh   # pushes ghcr.io/unidroid-ai/brain:gr00t-n17-v0 and prints the digest
 ```
 
 The build fetches `brain-comm` at `v1.0.0` over HTTPS, so that repository must be public. To build another ref, pass `--build-arg BRAIN_COMM_REF=<tag>`.

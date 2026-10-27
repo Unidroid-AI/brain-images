@@ -7,7 +7,7 @@ The runtime is OpenPI at commit `215abfb217dbac7d5f1273282331b9b1866c0479`. It s
 The check accepts a pi0.5 flow checkpoint (`time_mlp_in` and a 32-D `action_in_proj`) with DROID quantile norm stats. `agent.yaml` must set `policy_config` to `pi05_droid_jointpos`. That config decodes the first seven action dimensions as joint-position deltas and leaves the gripper absolute.
 
 ```
-bash pi0.5-v0/build_and_push.sh registry.example/brain-pi0.5-v0:phase
+bash pi0.5-v0/build_and_push.sh   # pushes ghcr.io/unidroid-ai/brain:pi0.5-v0 and prints the digest
 ```
 
 The build fetches `brain-comm` at `v1.0.0` over HTTPS, so that repository must be public. To build another ref, pass `--build-arg BRAIN_COMM_REF=<tag>`.
