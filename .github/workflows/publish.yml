@@ -1,0 +1,67 @@
+name: publish
+
+# Builds a brain image and pushes it to ghcr.io/<owner>/brain:<folder>.
+# The digest is printed in the job summary; paste it into Admin -> Brains.
+on:
+  workflow_dispatch:
+    inputs:
+      family:
+        description: Folder to build
+        type: choice
+        required: true
+        options:
+          - gr00t-n17-v0
+          - pi0.5-v0
+          - flux3-action-v0
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The images are large; a hosted runner starts with little free disk.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker image prune --all --force
+          df -h /
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image name
+        id: name
+        run: echo "repo=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/brain" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.family }}
+          file: ${{ inputs.family }}/Dockerfile
+          push: true
+          provenance: false
+          tags: ${{ steps.name.outputs.repo }}:${{ inputs.family }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Digest
+        run: |
+          {
+            echo "### ${{ inputs.family }}"
+            echo
+            echo '```'
+            echo "${{ steps.name.outputs.repo }}@${{ steps.build.outputs.digest }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
