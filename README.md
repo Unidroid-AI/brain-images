@@ -38,6 +38,20 @@ Each image is two stages: a builder with compilers and git, and a CUDA runtime t
 
 Mount `-v brain-cache:/cache` so a restarted brain does not recompile. Without the mount the JIT caches are lost on exit.
 
+## Adding a family
+
+A new model family, or an incompatible runtime for an existing one, is ready for a challenge when all of these hold:
+
+1. **Folder.** `<family>-v<N>/` with a two-stage `Dockerfile`, a `build_and_push.sh` that prints `repo@sha256:...`, and a README covering the base checkpoint and how to seal any reference.
+2. **Runtime.** The image pins `brain-comm` to a tag (`BRAIN_COMM_REF`) and runs `/submission` through `brain-comm serve`. It downloads nothing at serve time: validators run with no network.
+3. **Submission check.** `BRAIN_COMM_CHECK=module:function` rejects a submission whose weights do not fit the architecture (shapes, dtypes, missing tensors). If it compares against a reference signature, the committed one must be sealed (see `gr00t-n17-v0`).
+4. **Reference submission.** A minimal submission built from the base checkpoint passes `brain-comm check` and `brain-comm smoke` against the built image, and scores above zero on one public benchmark with `udcli eval local`. Keep its Hugging Face repo as the example in the Brain tab.
+5. **Platform record.** Admin → Brains has the id (the folder name), family, model type, the image **digest** (not a tag), base checkpoint, checkpoint format, action space and dimension, and `max_gpu_mem_gb` measured on the reference submission.
+6. **Allowed files.** `submission_code` stays off unless the family must ship its own code (world models). Then validators run it in the split sandbox (PROTOCOL.md, section 7), and the evaluator must be tested in all three stages.
+7. **Miner notes.** The Brain tab description lists the `agent.yaml` settings and required files. `udcli check` passes on the reference repo.
+
+Add the family to a challenge only after a test-mode challenge (whitelisted accounts) has scored the reference submission end to end with at least two validators.
+
 ## License
 
 BSD-3-Clause. Copyright (c) 2026 Unidroid. See [LICENSE](LICENSE).
