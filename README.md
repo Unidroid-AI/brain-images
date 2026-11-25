@@ -62,6 +62,7 @@ A new model family, or an incompatible runtime for an existing one, is ready for
 5. **Platform record.** Admin → Brains has the id (the folder name), family, model type, the image **digest** (not a tag), base checkpoint, checkpoint format, action space and dimension, and `max_gpu_mem_gb` measured on the reference submission.
 6. **Allowed files.** `submission_code` stays off unless the family must ship its own code (world models). Then validators run it in the split sandbox (PROTOCOL.md, section 7), and the evaluator must be tested in all three stages.
 7. **Miner notes.** The Brain tab description lists the `agent.yaml` settings and required files. `udcli submission check` passes on the reference repo.
+8. **Submission template.** Every brain has a template repo, `unidroid-template-<brain>`, in the Unidroid-AI GitHub organization (`README.md`, `agent.yaml`, `brain/`, `train/`, `tests/`, and a script that fetches the base checkpoint into `weights/`). Add it to `TEMPLATES` in `unidroid-cli/src/unidroid_cli/templates.py` and set `template_repo` on the brain in Admin → Brains. The Brain tab and `udcli submission init` use them.
 
 Add the family to a challenge only after a test-mode challenge (whitelisted accounts) has scored the reference submission end to end with at least two validators.
 
