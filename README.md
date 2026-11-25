@@ -10,7 +10,7 @@
 </p>
 
 ```
-model family  ──brain image──  /submission
+model family  â”€â”€brain imageâ”€â”€  /submission
               brain-comm v1.0.0
 ```
 
@@ -42,14 +42,14 @@ Mount `-v brain-cache:/cache` so a restarted brain does not recompile. Without t
 
 All families live in one public GHCR package, `ghcr.io/unidroid-ai/brain`, with one tag per folder (`brain:gr00t-n17-v0`). Tags are labels; the platform and validators use the digest, `ghcr.io/unidroid-ai/brain@sha256:...`.
 
-Either run the **publish** workflow (Actions → publish → pick the folder; the digest is in the job summary), or push by hand:
+Either run the **publish** workflow (Actions â†’ publish â†’ pick the folder; the digest is in the job summary), or push by hand:
 
 ```bash
 echo "$GHCR_TOKEN" | docker login ghcr.io -u <user> --password-stdin   # token with write:packages
 bash gr00t-n17-v0/build_and_push.sh
 ```
 
-After the first push, set the package to **public** (GitHub → Packages → brain → Package settings). Validators pull without credentials, and a private package answers them with 401. Then paste the digest into Admin → Brains.
+After the first push, set the package to **public** (GitHub â†’ Packages â†’ brain â†’ Package settings). Validators pull without credentials, and a private package answers them with 401. Then paste the digest into Admin â†’ Brains.
 
 ## Adding a family
 
@@ -59,10 +59,10 @@ A new model family, or an incompatible runtime for an existing one, is ready for
 2. **Runtime.** The image pins `brain-comm` to a tag (`BRAIN_COMM_REF`) and runs `/submission` through `brain-comm serve`. It downloads nothing at serve time: validators run with no network.
 3. **Submission check.** `BRAIN_COMM_CHECK=module:function` rejects a submission whose weights do not fit the architecture (shapes, dtypes, missing tensors). If it compares against a reference signature, the committed one must be sealed (see `gr00t-n17-v0`).
 4. **Reference submission.** A minimal submission built from the base checkpoint passes `brain-comm check` and `brain-comm smoke` against the built image, and scores above zero on one public benchmark with `udcli submission eval`. Keep its Hugging Face repo as the example in the Brain tab.
-5. **Platform record.** Admin → Brains has the id (the folder name), family, model type, the image **digest** (not a tag), base checkpoint, checkpoint format, action space and dimension, and `max_gpu_mem_gb` measured on the reference submission.
+5. **Platform record.** Admin â†’ Brains has the id (the folder name), family, model type, the image **digest** (not a tag), base checkpoint, checkpoint format, action space and dimension, and `max_gpu_mem_gb` measured on the reference submission.
 6. **Allowed files.** `submission_code` stays off unless the family must ship its own code (world models). Then validators run it in the split sandbox (PROTOCOL.md, section 7), and the evaluator must be tested in all three stages.
 7. **Miner notes.** The Brain tab description lists the `agent.yaml` settings and required files. `udcli submission check` passes on the reference repo.
-8. **Submission template.** Every brain has a template repo, `unidroid-template-<brain>`, in the Unidroid-AI GitHub organization (`README.md`, `agent.yaml`, `brain/`, `train/`, `tests/`, and a script that fetches the base checkpoint into `weights/`). Add it to `TEMPLATES` in `unidroid-cli/src/unidroid_cli/templates.py` and set `template_repo` on the brain in Admin → Brains. The Brain tab and `udcli submission init` use them.
+8. **Submission template.** Every brain has a template repo, `template-<brain>`, in the Unidroid-AI GitHub organization (`README.md`, `agent.yaml`, `brain/`, `train/`, `tests/`, and a script that fetches the base checkpoint into `weights/`). Add it to `TEMPLATES` in `unidroid-cli/src/unidroid_cli/templates.py` and set `template_repo` on the brain in Admin â†’ Brains. The Brain tab and `udcli submission init` use them.
 
 Add the family to a challenge only after a test-mode challenge (whitelisted accounts) has scored the reference submission end to end with at least two validators.
 
