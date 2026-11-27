@@ -1,0 +1,6 @@
+# The brain-comm every brain image is built from. One ref for all families, so they report the same protocol.
+#
+# A tag or a full commit SHA. scripts/resolve_brain_comm.sh turns it into a commit and reads PROTOCOL_VERSION at
+# that commit; the Dockerfiles install exactly that commit and label the image with both. A sandbox and a brain
+# image can run together only when their ai.unidroid.brain-comm.protocol labels are equal.
+BRAIN_COMM_REF=v1.0.0

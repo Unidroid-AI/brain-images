@@ -54,14 +54,21 @@ RUN python /tmp/patch_offline_backbone.py && rm /tmp/patch_offline_backbone.py \
     && python -m compileall -q /opt/venv/lib/python3.10/site-packages/gr00t
 
 # Protocol package, built as a wheel so an update does not invalidate the environment layer.
-# ADD resolves the branch or tag on every build, so a moved ref is never served from cache.
-ARG BRAIN_COMM_REF=v1.0.0
-ADD https://github.com/Unidroid-AI/brain-comm.git#${BRAIN_COMM_REF} /tmp/comm
+# The commit comes from ../brain-comm.lock through build_and_push.sh, so the label below records what ran.
+ARG BRAIN_COMM_COMMIT
+RUN test -n "${BRAIN_COMM_COMMIT}" || (echo "build with build_and_push.sh: it passes BRAIN_COMM_COMMIT and BRAIN_COMM_PROTOCOL" >&2; exit 1)
+ADD https://github.com/Unidroid-AI/brain-comm.git#${BRAIN_COMM_COMMIT} /tmp/comm
 RUN --mount=type=cache,target=/root/.cache/pip \
     python -m pip wheel --no-deps --wheel-dir /wheels /tmp/comm
 
 
 FROM nvidia/cuda:12.8.1-base-ubuntu22.04
+
+# A sandbox and this image can run together only when these protocols are equal.
+ARG BRAIN_COMM_COMMIT
+ARG BRAIN_COMM_PROTOCOL
+LABEL ai.unidroid.brain-comm.commit="${BRAIN_COMM_COMMIT}" \
+      ai.unidroid.brain-comm.protocol="${BRAIN_COMM_PROTOCOL}"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -86,7 +93,8 @@ COPY --from=builder /opt/isaac-gr00t /opt/isaac-gr00t
 COPY --from=builder /opt/unidroid /opt/unidroid
 
 RUN --mount=type=bind,from=builder,source=/wheels,target=/wheels \
-    python -m pip install --no-deps --no-index /wheels/*.whl
+    python -m pip install --no-deps --no-index /wheels/*.whl \
+    && test "$(python -c 'import brain_comm; print(brain_comm.PROTOCOL_VERSION)')" = "${BRAIN_COMM_PROTOCOL}"
 
 COPY gr00t_n17_check.py reference_signature.json /opt/unidroid/
 

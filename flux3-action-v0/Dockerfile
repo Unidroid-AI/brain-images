@@ -41,14 +41,21 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     && { /opt/flux-action/.venv/bin/python -m compileall -q -x '/\.venv/' /opt/flux-action || true; }
 
 # Protocol package, built as a wheel so an update does not invalidate the environment layer.
-# ADD resolves the branch or tag on every build, so a moved ref is never served from cache.
-ARG BRAIN_COMM_REF=v1.0.0
-ADD https://github.com/Unidroid-AI/brain-comm.git#${BRAIN_COMM_REF} /tmp/comm
+# The commit comes from ../brain-comm.lock through build_and_push.sh, so the label below records what ran.
+ARG BRAIN_COMM_COMMIT
+RUN test -n "${BRAIN_COMM_COMMIT}" || (echo "build with build_and_push.sh: it passes BRAIN_COMM_COMMIT and BRAIN_COMM_PROTOCOL" >&2; exit 1)
+ADD https://github.com/Unidroid-AI/brain-comm.git#${BRAIN_COMM_COMMIT} /tmp/comm
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv build --wheel --out-dir /wheels /tmp/comm
 
 
 FROM nvidia/cuda:12.8.1-base-ubuntu22.04
+
+# A sandbox and this image can run together only when these protocols are equal.
+ARG BRAIN_COMM_COMMIT
+ARG BRAIN_COMM_PROTOCOL
+LABEL ai.unidroid.brain-comm.commit="${BRAIN_COMM_COMMIT}" \
+      ai.unidroid.brain-comm.protocol="${BRAIN_COMM_PROTOCOL}"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -73,7 +80,8 @@ COPY --from=builder /opt/flux-action /opt/flux-action
 
 RUN --mount=from=ghcr.io/astral-sh/uv:0.5.1,source=/uv,target=/bin/uv \
     --mount=type=bind,from=builder,source=/wheels,target=/wheels \
-    UV_COMPILE_BYTECODE=1 uv pip install --no-cache --no-deps /wheels/*.whl
+    UV_COMPILE_BYTECODE=1 uv pip install --no-cache --no-deps /wheels/*.whl \
+    && test "$(python -c 'import brain_comm; print(brain_comm.PROTOCOL_VERSION)')" = "${BRAIN_COMM_PROTOCOL}"
 
 COPY flux3_check.py /opt/unidroid/
 

@@ -43,6 +43,11 @@ jobs:
         id: name
         run: echo "repo=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/brain" >> "$GITHUB_OUTPUT"
 
+      # brain-comm.lock names one ref for every family; this reads its commit and PROTOCOL_VERSION.
+      - name: Resolve brain-comm
+        id: comm
+        run: bash scripts/resolve_brain_comm.sh | tee -a "$GITHUB_OUTPUT"
+
       - name: Build and push
         id: build
         uses: docker/build-push-action@v6
@@ -51,6 +56,9 @@ jobs:
           file: ${{ inputs.family }}/Dockerfile
           push: true
           provenance: false
+          build-args: |
+            BRAIN_COMM_COMMIT=${{ steps.comm.outputs.BRAIN_COMM_COMMIT }}
+            BRAIN_COMM_PROTOCOL=${{ steps.comm.outputs.BRAIN_COMM_PROTOCOL }}
           tags: ${{ steps.name.outputs.repo }}:${{ inputs.family }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
@@ -64,4 +72,6 @@ jobs:
             echo '```'
             echo "${{ steps.name.outputs.repo }}@${{ steps.build.outputs.digest }}"
             echo '```'
+            echo
+            echo "brain-comm ${{ steps.comm.outputs.BRAIN_COMM_COMMIT }}, protocol ${{ steps.comm.outputs.BRAIN_COMM_PROTOCOL }}"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -18,6 +18,6 @@ text_encoder/       # Qwen3-VL-4B: config.json and safetensors shards
 bash flux3-action-v0/build_and_push.sh   # pushes ghcr.io/unidroid-ai/brain:flux3-action-v0 and prints the digest
 ```
 
-The build fetches `brain-comm` at `v1.0.0` over HTTPS, so that repository must be public. To build another ref, pass `--build-arg BRAIN_COMM_REF=<tag>`.
+The build fetches `brain-comm` over HTTPS at the commit that `../brain-comm.lock` resolves to, so that repository must be public. `build_and_push.sh` passes the commit and its protocol to the Dockerfile; a plain `docker build` without them stops at the first brain-comm step. To try another ref, set `BRAIN_COMM_REF=<tag or sha>` for the script.
 
 The script prints `repo@sha256:...`. That digest is the phase config's `brain_image`.

@@ -24,15 +24,20 @@ flux3-action-v0/    FLUX 3 Action
 
 The folder names the runtime and its version. An incompatible runtime is a new folder, such as `gr00t-n17-v1`. It does not add a repository. Challenges pull the image by digest.
 
+## brain-comm
+
+All families install the same brain-comm: the ref in `brain-comm.lock`. `scripts/resolve_brain_comm.sh` turns it into a commit and reads `PROTOCOL_VERSION` at that commit. The build scripts and the publish workflow pass both to the Dockerfile, which installs exactly that commit, fails when the package reports another protocol, and labels the image:
+
+| Label | Value |
+|---|---|
+| `ai.unidroid.brain-comm.commit` | the brain-comm commit installed in the image |
+| `ai.unidroid.brain-comm.protocol` | `PROTOCOL_VERSION` at that commit |
+
+A challenge pins no brain-comm. Its brain image is the server and its sandbox image is the client, and their protocol labels must be equal. A brain-comm release that keeps `PROTOCOL_VERSION` needs no rebuild. A new `PROTOCOL_VERSION` means rebuilding every family, registering each digest as a new brain in Admin, and publishing a new sandbox (unidroid-sandbox).
+
 ## Build
 
-BuildKit is required. It has been the default since Docker 23.
-
-```bash
-DOCKER_BUILDKIT=1 docker build -f gr00t-n17-v0/Dockerfile -t brain-gr00t-n17-v0 gr00t-n17-v0
-DOCKER_BUILDKIT=1 docker build -f pi0.5-v0/Dockerfile -t brain-pi0.5-v0 pi0.5-v0
-DOCKER_BUILDKIT=1 docker build -f flux3-action-v0/Dockerfile -t brain-flux3-action-v0 flux3-action-v0
-```
+BuildKit is required. It has been the default since Docker 23. Build through the family's script, which adds the brain-comm commit and protocol (see brain-comm above), checks the image against its label and pushes it (see Publish).
 
 Each image is two stages: a builder with compilers and git, and a CUDA runtime that receives only the environment. The framework wheels bring their own CUDA libraries.
 
@@ -56,7 +61,7 @@ After the first push, set the package to **public** (GitHub â†’ Packages â
 A new model family, or an incompatible runtime for an existing one, is ready for a challenge when all of these hold:
 
 1. **Folder.** `<family>-v<N>/` with a two-stage `Dockerfile`, a `build_and_push.sh` that prints `repo@sha256:...`, and a README covering the base checkpoint and how to seal any reference.
-2. **Runtime.** The image pins `brain-comm` to a tag (`BRAIN_COMM_REF`) and runs `/submission` through `brain-comm serve`. It downloads nothing at serve time: validators run with no network.
+2. **Runtime.** The image installs the `brain-comm` commit that `brain-comm.lock` resolves to, labels itself `ai.unidroid.brain-comm.commit` and `ai.unidroid.brain-comm.protocol`, and runs `/submission` through `brain-comm serve`. It downloads nothing at serve time: validators run with no network.
 3. **Submission check.** `BRAIN_COMM_CHECK=module:function` rejects a submission whose weights do not fit the architecture (shapes, dtypes, missing tensors). If it compares against a reference signature, the committed one must be sealed (see `gr00t-n17-v0`).
 4. **Reference submission.** A minimal submission built from the base checkpoint passes `brain-comm check` and `brain-comm smoke` against the built image, and scores above zero on one public benchmark with `udcli submission eval`. Keep its Hugging Face repo as the example in the Brain tab.
 5. **Platform record.** Admin â†’ Brains has the id (the folder name), family, model type, the image **digest** (not a tag), base checkpoint, checkpoint format, action space and dimension, and `max_gpu_mem_gb` measured on the reference submission.
